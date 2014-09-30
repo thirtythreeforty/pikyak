@@ -50,12 +50,17 @@
 
     \subsection{Definitions, Acronyms, and Abbreviations}
         \begin{description*}
-            \item[up-vote:] A single positive unit that users can give to a post to signify that they enjoy the content.
+            \item[post:] A message, containing only a single picture, submitted to the public PikYak server for other users to view.
 
-            \item[down-vote:] A single negative unit that users can give to a post to signify that they do not enjoy the content.
+            \item[up-vote:] A single positive vote that users can give to a post to signify that they enjoy the content.
+
+            \item[down-vote:] A single negative vote that users can give to a post to signify that they do not enjoy the content.
+
+            \item[score:] The value of the sum of a post's downvotes subtracted from the sum of its upvotes.
+                          This measure provides a rough indication of how popular a post is.
 
             \item[conversation:] A grouping of posts that are made in reply to one another.
-                                    Creating a new post either creates a new conversation or replies to an existing one.
+                                 Creating a new post either creates a new conversation or replies to an existing one.
         \end{description*}
 
     \subsection{References}
@@ -98,7 +103,7 @@
                 \item The application will display the recently posted pictures in the conversation, with an up-arrow and a down-arrow.
                 \item The user will tap the up-arrow.
                 \item The application will immediately advise the server of the user's action, and all other clients' devices will be updated immediately.
-                \item The current amount of down-votes subtracted from up-votes will be displayed.
+                \item Each post's score will be displayed next to the post.
             \end{enumerate}
 
     \subsection{Down-vote Picture (Required)}
@@ -116,8 +121,8 @@
                 \item The application will display the recently posted pictures in the conversation, with an up-arrow and a down-arrow.
                 \item The user will tap the down-arrow.
                 \item The application will immediately advise the server of the user's action, and all other clients' devices will be updated immediately.
-                \item The current amount of down-votes subtracted from up-votes will be displayed.
-                \item If the amount reaches -5, the post will be deleted.
+                \item Each post's score will be displayed next to the post.
+                \item If the post's score reaches -5, the server will replace the post with a message that it has been deleted.
             \end{enumerate}
 
     \subsection{Subscribe to Updates (Medium)}
