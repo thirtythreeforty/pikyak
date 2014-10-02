@@ -75,6 +75,7 @@
 
 \section{Specific Requirements}
     \subsection{Post Picture (Required)}
+    \label{sec:post}
         \subsubsection{Description}
             The user would like to create a conversation by uploading a picture.
         \subsubsection{Actors}
@@ -92,6 +93,7 @@
             \end{enumerate}
     
     \subsection{Up-vote Picture (Required)}
+    \label{sec:upvote}
         \subsubsection{Description}
             The user would like to up-vote a conversation they like.
         \subsubsection{Actors}
@@ -110,6 +112,7 @@
             \end{enumerate}
 
     \subsection{Down-vote Picture (Required)}
+    \label{sec:downvote}
         \subsubsection{Description}
             The user would like to down-vote a conversation they dislike.
         \subsubsection{Actors}
@@ -129,6 +132,7 @@
             \end{enumerate}
 
     \subsection{Subscribe to Updates (Medium)}
+    \label{sec:subscribe}
         \subsubsection{Description}
             The application would alert the user when a new picture was posted in a conversation in which they were participating.
         \subsubsection{Actors}
@@ -145,8 +149,53 @@
                 \item The user can swipe the notification to dismiss it.
             \end{enumerate}
 
-% TODO make actual appendices
 \section*{Appendix A: User Interface}
+    \subsection{Main Screen}
+        The main screen will consist of a scrolling list of recent conversations.
+        A mockup is given in Figure~\ref{fig:mainscreen}.
+        Each conversation will be represented by a thumbnail of the original post made in that conversation and a small number indicating the number of replies in the conversation.
+        The number shall be absent if there have been no replies to the post.
+        The list of conversations (and the corresponding reply indicators) will update in real time as other users add new posts.
+        Touching a post shall enter the conversation view (see Section~\ref{sec:conversation}) for that post.
+
+        The Android action bar shall contain the following menu items:
+
+        \begin{itemize}
+            \item \emph{Create Conversation}, which shall begin a new conversation according to Section~\ref{sec:post}.
+            \item \emph{Sort}, which shall present the user with a menu to sort conversations by score or by the date of the most recent post.
+            \item \emph{Refresh}, which shall force the application to update the list of conversations.
+        \end{itemize}
+
+        \begin{figure}[h]
+            \centering \includegraphics[width=6cm,keepaspectratio]{mockups/main}
+            \caption{The Android client's main screen}
+            \label{fig:mainscreen}
+        \end{figure}
+
+    \subsection{Conversation View}
+    \label{sec:conversation}
+        The conversation view will consist of a scrolling list of the recent posts in a given conversation.
+        A mockup is given in Figure~\ref{fig:conversationscreen}.
+        The list shall update in real time when another user posts to the conversation.
+
+        Each post will be represented by a cropped version of the image, which the user can touch to view the full image.
+        Overlaid on the right of each post will be a small number indicating the post's score, as well as upvote and downvote arrows.
+        These arrows shall function according to Sections~\ref{sec:upvote} and~\ref{sec:downvote}.
+        There shall also be a Share button overlaid in the lower right hand corner of the image that shall invoke the Android sharing menu for that image.
+
+        At the bottom of the page there will be a Reply button which will allow the user to capture an image and post it, as in Section~\ref{sec:post}.
+
+        The Android action bar shall contain the following menu items:
+
+        \begin{itemize}
+            \item \emph{Subscribe}, which shall subscribe or unsubscribe the user from the conversation according to Section~\ref{sec:subscribe}.
+        \end{itemize}
+
+        \begin{figure}[h]
+            \centering \includegraphics[width=6cm,keepaspectratio]{mockups/conversation-view}
+            \caption{The Android client's conversation view}
+            \label{fig:conversationscreen}
+        \end{figure}
 
 \section*{Appendix B: Initial Task and Role Assignments}
     Initial presentation assignments are as follows.
