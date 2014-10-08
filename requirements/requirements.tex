@@ -50,6 +50,8 @@
         The document will help to define the concept and functionality of PikYak for development.
 
     \subsection{Definitions, Acronyms, and Abbreviations}
+        The following terms are used throughout the document.
+
         \begin{description*}
             \item[post:] A message, containing only a single picture, submitted to the public PikYak server for other users to view.
 
@@ -62,6 +64,18 @@
 
             \item[conversation:] A grouping of posts that are made in reply to one another.
                                  Creating a new post either creates a new conversation or replies to an existing one.
+
+            \item[user:] A person who interacts with the PikYak service.
+
+                         PikYak has three classes of users:
+
+                         \begin{description*}
+                             \item[unregistered user:] Can view posts on the PikYak network using the client app.
+                             \item[registered user:] Can perform all actions that an unregistered user can, and can also create new posts and conversations.
+                             \item[moderator:] Can perform all actions that a registered user can, and can also remove inappropriate or junk posts.  This user class will typically be affiliated with PikYak.
+                         \end{description*}
+
+                         Unless otherwise specified, in this document, the term ``user'' will refer to a registered user.
         \end{description*}
 
     \subsection{References}
@@ -70,6 +84,10 @@
 \section{System Overview}
     \subsection{Purpose}
         PikYak will be an anonymous picture sharing application that allows users to exchange images with other users that are local to each other.  The application will allow users to comment, upvote, and downvote images.
+
+        Conversations will by default be ranked according to their proximity to the user's location and to their crowd-determined score.  The application will alert users to activity in conversations they have participated in.
+
+        Moderators will have the opportunity to review unpopular posts and discipline the post's author through appropriate action.
     \subsection{Use Case Diagram}
         \includegraphics{useCase}
 
@@ -95,7 +113,7 @@
     \subsection{Up-vote Picture (Required)}
     \label{sec:upvote}
         \subsubsection{Description}
-            The user would like to up-vote a conversation they like.
+            The user would like to up-vote a conversation or post they like.
         \subsubsection{Actors}
             \begin{itemize}
                 \item User
@@ -114,7 +132,7 @@
     \subsection{Down-vote Picture (Required)}
     \label{sec:downvote}
         \subsubsection{Description}
-            The user would like to down-vote a conversation they dislike.
+            The user would like to down-vote a conversation or post they dislike.
         \subsubsection{Actors}
             \begin{itemize}
                 \item User
@@ -128,7 +146,24 @@
                 \item The user will tap the down-arrow.
                 \item The application will immediately advise the server of the user's action, and all other clients' devices will be updated immediately.
                 \item Each post's score will be displayed next to the post.
-                \item If the post's score reaches -5, the server will replace the post with a message that it has been deleted.
+                \item If the post's score reaches -5, the server will bring the post to nearby moderators' attention.
+            \end{enumerate}
+
+    \subsection{Register (Required)}
+    \label{sec:register}
+        \subsubsection{Description}
+            An unregistered user would like to become a registered user.
+        \subsubsection{Actors}
+            \begin{itemize}
+                \item Unregistered User
+            \end{itemize}
+        \subsubsection{Steps}
+            \begin{enumerate}
+                \item The unregistered user launches the PikYak application on their device.
+                \item The unregistered user selects the Register option from the menu.
+                \item The application prompts the user for their email address and their desired password.
+                \item The unregistered user enters their details and submits it.
+                \item The server registers the user.
             \end{enumerate}
 
     \subsection{Subscribe to Updates (Medium)}
@@ -168,6 +203,7 @@
             \item \emph{Create Conversation}, which shall begin a new conversation according to Section~\ref{sec:post}.
             \item \emph{Sort}, which shall present the user with a menu to sort conversations by score or by the date of the most recent post.
             \item \emph{Refresh}, which shall force the application to update the list of conversations.
+            \item \emph{Sign In}, which shall allow the user to register or sign in to the service according to Section~\ref{sec:register}.
         \end{itemize}
 
         \begin{figure}[h]
@@ -187,12 +223,15 @@
         These arrows shall function according to Sections~\ref{sec:upvote} and~\ref{sec:downvote}.
         There shall also be a Share button overlaid in the lower right hand corner of the image that shall invoke the Android sharing menu for that image.
 
+        A Remove Post button shall appear on each post only for moderators, and only for posts that have been flagged due to low score.  This button shall remove the post from PikYak for all users, replacing it with a ``deleted'' message.
+
         At the bottom of the page there will be a Reply button which will allow the user to capture an image and post it, as in Section~\ref{sec:post}.
 
         The Android action bar shall contain the following menu items:
 
         \begin{itemize}
             \item \emph{Subscribe}, which shall subscribe or unsubscribe the user from the conversation according to Section~\ref{sec:subscribe}.
+            \item \emph{Remove Conversation}, which shall appear only for a moderator, and only for conversations that have been flagged.  This button shall remove the conversation in its entirety from PikYak, replacing it with a ``deleted'' message.
         \end{itemize}
 
         \begin{figure}[h]
@@ -203,13 +242,16 @@
 
 \section{Initial Task and Role Assignments}
     Initial presentation assignments are as follows.
+
     \begin{description*}
         \item[Requirements:] Kevin Stephens
         \item[Design:] Collin Kelso
         \item[Final:] George Hilliard
     \end{description*}
 
+    \noindent
     Initial task assignments are as follows.
+
     \begin{description*}
         \item[Server Backend:] Kevin Stephens
         \item[Server Frontend:] Collin Kelso
