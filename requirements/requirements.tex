@@ -5,6 +5,9 @@
 \usepackage[english]{babel}
 \usepackage[hidelinks]{hyperref}
 \usepackage{graphicx}
+\usepackage{tikz}
+
+\usetikzlibrary{shapes}
 
 % Define a \blankpage command to generate boilerplate.
 \newcommand*{\blankpage}{%
@@ -95,7 +98,34 @@ Group \# 4
 
         Moderators will have the opportunity to review unpopular posts and discipline the post's author through appropriate action.
     \subsection{Use Case Diagram}
-        \includegraphics{useCase}
+        \begin{figure}[h]
+            \begin{center}
+                \begin{tikzpicture}
+                    \draw (0,-0.5) node{} rectangle (6,-7.5);
+                    \draw (-3,-1.5) node[draw,ellipse] (unregistered) {Unregistered user};
+                    \draw (-3,-4) node[draw,ellipse] (registered) {Registered user};
+                    \draw (-3,-6.5) node[draw,ellipse] (moderator) {Moderator};
+                    \node (post) at (3,-2.5) {Post Picture};
+                    \node (upvote) at (3,-3.5) {Upvote Picture};
+                    \node (downvote) at (3,-4.5) {Downvote Picture};
+                    \node (remove) at (3,-5.5) {Remove Picture};
+                    \node (register) at (3,-1.5) {Register};
+                    \node (subscribe) at (3,-6.5) {Subscribe to Updates};
+                    \draw [->] (unregistered) edge (register);
+                    \draw [->] (registered) edge (post);
+                    \draw [->] (registered) edge (upvote);
+                    \draw [->] (registered) edge (downvote);
+                    \draw [->] (registered) edge (subscribe);
+                    \draw [->] (moderator) edge (post);
+                    \draw [->] (moderator) edge (upvote);
+                    \draw [->] (moderator) edge (downvote);
+                    \draw [->] (moderator) edge (subscribe);
+                    \draw [->] (moderator) edge (remove);
+                    \draw [->, bend left] (unregistered) to node[auto]{Registration} (registered);
+                \end{tikzpicture}
+            \end{center}
+            \caption{Use Case Diagram}
+        \end{figure}
 
 \section{Specific Requirements}
     \subsection{Post Picture (Required)}
