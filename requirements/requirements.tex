@@ -77,7 +77,7 @@ Group \# 4
 
                          \begin{description*}
                              \item[unregistered user:] Can view posts on the PikYak network using the client app.
-                             \item[registered user:] Can perform all actions that an unregistered user can, and can also create new posts and conversations.
+                             \item[registered user:] Can perform all actions that an unregistered user can, and can also create new posts and conversations and up- and down-vote existing ones.
                              \item[moderator:] Can perform all actions that a registered user can, and can also remove inappropriate or junk posts.  This user class will typically be affiliated with PikYak.
                          \end{description*}
 
@@ -153,6 +153,23 @@ Group \# 4
                 \item The application will immediately advise the server of the user's action, and all other clients' devices will be updated immediately.
                 \item Each post's score will be displayed next to the post.
                 \item If the post's score reaches -5, the server will bring the post to nearby moderators' attention.
+            \end{enumerate}
+
+    \subsection{Remove Picture (Required)}
+    \label{sec:remove}
+        \subsubsection{Description}
+            A moderator would like to remove a picture that has been flagged by users' votes.
+        \subsubsection{Actors}
+            \begin{itemize}
+                \item Moderator
+            \end{itemize}
+        \subsubsection{Steps}
+            \begin{enumerate}
+                \item The moderator launches the PikYak client application on their device.
+                \item The application displays a list of recent conversations, with a flag icon next to conversations that have been flagged.
+                \item The moderator may optionally choose one of the conversations by tapping it, in which case the application will display the recently posted pictures in the conversation, with a flag next to posts that have been flagged.
+                \item The moderator will choose the Remove option from the menu.
+                \item The application will immediately advise the server of the moderator's action.  The server will replace the post/conversation in question with a message that it has been deleted, and all other clients' devices will be updated immediately.
             \end{enumerate}
 
     \subsection{Register (Required)}
