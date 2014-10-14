@@ -1,0 +1,69 @@
+\documentclass[11pt]{scrartcl}
+
+\usepackage{fullpage}
+\usepackage{mdwlist}
+\usepackage[english]{babel}
+\usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+\usepackage{tikz}
+
+\usetikzlibrary{shapes}
+
+% Define a \blankpage command to generate boilerplate.
+\newcommand*{\blankpage}{%
+\clearpage
+\vspace*{\fill}
+\centerline{This page intentionally left blank.}
+\vspace{\fill}
+\clearpage}
+
+% Make every \section{} start on a new page.
+\let\stdsection\section
+\renewcommand\section{\newpage\stdsection}
+
+\title{PikYak Design Document}
+\subtitle{Version 1}
+\author{
+    George Hilliard (gh403) \\
+    Collin Kelso (chk59) \\
+    Kevin Stephens (ks910)
+}
+\date{2014 October 16}
+
+\hypersetup{pdftitle={PikYak Requirements Document},
+            pdfauthor={George Hilliard; Collin Kelso; Kevin Stephens}}
+
+\begin{document}
+
+\pagenumbering{roman}
+
+\maketitle
+
+\begin{center}
+Lab instructor: Jonathan Lalo
+
+Group \# 4
+\end{center}
+
+\blankpage
+
+\tableofcontents
+
+\blankpage
+
+\pagenumbering{arabic}
+
+\section{Overview Class Diagram}
+
+\section{Detailed Class Diagrams}
+    \subsection{Data Classes}
+
+\section{Sequence Diagrams}
+
+\appendix
+
+\clearpage
+\section{Task \& Role Assignments}
+
+\end{document}
+
