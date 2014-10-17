@@ -35,17 +35,17 @@ class AsDictMixin(object):
         return result
 
 class User(db.Model, AsDictMixin):
-    __tablename__ = "users"
-    _exportables_ = ["username", "email"]
-    username = db.Column(db.String(maxIDlength), nullable = False, unique = True, primary_key = True)
+    __tablename__ = 'users'
+    _exportables_ = ['username', 'email']
+    username = db.Column(db.String(maxIDlength), primary_key = True)
     email = db.Column(db.String(maxIDlength))
     hash_password = db.Column(db.String(maxIDlength))
     deleted = db.Column(db.Boolean)
-    posts = db.relationship('Post', backref='author', cascade='delete')
+    posts = db.relationship('Post', backref='user', cascade='delete')
 
     def __init__(self, **args):
-        self.username = args.get("username")
-        self.email = args.get("email")
+        self.username = args.get('username')
+        self.email = args.get('email')
         self.deleted = False
 
     # Authentication
@@ -58,13 +58,35 @@ class User(db.Model, AsDictMixin):
 
 class Post(db.Model, AsDictMixin):
     __tablename__ = 'posts'
-    _exportables_ = []
+    _exportables_ = ['author_id', 'conversation_id']
     id = db.Column(db.Integer, primary_key = True)
-    author_id = db.Column(db.String(maxIDlength), db.ForeignKey("users.username"), nullable = False)
+    user_id = db.Column(db.String(maxIDlength), db.ForeignKey('users.username'), nullable = False)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable = False)
 
     def __init__(self, **args):
-        self.author = args.get("author")
+        self.user = args.get('user')
+        self.user_id = args.get('user_id')
+        self.conversation = args.get('conversation')
+        self.conversation_id = args.get('conversation_id')
 
+class Conversation(db.Model, AsDictMixin):
+    __tablename__ = 'conversations'
+    _exportables_ = []
+    id = db.Column(db.Integer, primary_key = True)
+    posts = db.relationship('Post', backref='conversation')
+
+class Vote(db.Model, AsDictMixin):
+    __tablename__ = 'votes'
+    _exportables = []
+    id = db.Column(db.Integer, primary_key = True)
+    user_id = db.Column(db.String(maxIDlength), db.ForeignKey('users.username'), nullable = False)
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable = False)
+
+    def __init__(self, **args):
+        self.user = args.get('user')
+        self.user_id = args.get('user_id')
+        self.post = args.get('post')
+        self.post_id = args.get('post_id')
 
 # Authentication
 @auth.verify_password
