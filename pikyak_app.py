@@ -81,12 +81,14 @@ class Vote(db.Model, AsDictMixin):
     id = db.Column(db.Integer, primary_key = True)
     user_id = db.Column(db.String(maxIDlength), db.ForeignKey('users.username'), nullable = False)
     post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable = False)
+    value = db.Column(db.Integer, nullable = False)
 
     def __init__(self, **args):
         self.user = args.get('user')
         self.user_id = args.get('user_id')
         self.post = args.get('post')
         self.post_id = args.get('post_id')
+        self.value = args.get('value')
 
 # Authentication
 @auth.verify_password
