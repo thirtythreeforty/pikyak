@@ -36,16 +36,14 @@ class AsDictMixin(object):
 
 class User(db.Model, AsDictMixin):
     __tablename__ = 'users'
-    _exportables_ = ['username', 'email']
+    _exportables_ = []
     username = db.Column(db.String(maxIDlength), primary_key = True)
-    email = db.Column(db.String(maxIDlength))
     hash_password = db.Column(db.String(maxIDlength))
     deleted = db.Column(db.Boolean)
     posts = db.relationship('Post', backref='user', cascade='delete')
 
     def __init__(self, **args):
         self.username = args.get('username')
-        self.email = args.get('email')
         self.deleted = False
 
     # Authentication
@@ -71,7 +69,7 @@ class Post(db.Model, AsDictMixin):
 
 class Conversation(db.Model, AsDictMixin):
     __tablename__ = 'conversations'
-    _exportables_ = []
+    _exportables_ = ['posts']
     id = db.Column(db.Integer, primary_key = True)
     posts = db.relationship('Post', backref='conversation')
 
