@@ -97,7 +97,34 @@ def verify_password(username, password):
     g.user = user
     return True
 
-# Views are TODO
+# Views
+
+@app.route("/users/<userID>", methods=["PUT"])
+def registerPeer(userID):
+    j = request.get_json()
+    if j is None:
+        # Bad request
+        return "", 400
+
+    # TODO create User object here
+
+    password = request.authorization["password"]
+    peer.hash_new_password(password)
+
+    db.session.add(peer)
+    try:
+        db.session.commit()
+    except exc.IntegrityError:
+        # Already registered.
+        return "", 409
+
+    # User created!
+    return "", 201
+
+@app.route("/users/<userID>", methods=["DELETE"])
+def unregisterPeer(userID):
+    # TODO
+    return "", 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=app.config['DEBUG'])
