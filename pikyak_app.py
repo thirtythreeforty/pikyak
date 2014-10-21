@@ -58,7 +58,7 @@ class User(db.Model, AsDictMixin):
 
 class Post(db.Model, AsDictMixin):
     __tablename__ = 'posts'
-    _exportables_ = ['author_id', 'conversation_id']
+    _exportables_ = ['user_id', 'conversation_id']
     id = db.Column(db.Integer, primary_key = True)
     user_id = db.Column(db.String(maxIDlength), db.ForeignKey('users.username'), nullable = False)
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable = False)
