@@ -6,6 +6,7 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{graphicx}
 \usepackage{tikz}
+\usepackage{upquote}
 
 \usetikzlibrary{shapes}
 
@@ -139,6 +140,82 @@ Group \# 4
         \item[Server Frontend:] Collin Kelso
         \item[Android client application:] George Hilliard
     \end{description*}
+
+    \noindent
+    Initial task assignments are as follows.
+
+    \begin{description*}
+        \item[Server Backend:] Kevin Stephens
+        \item[Server Frontend:] Collin Kelso
+        \item[Android client application:] George Hilliard
+    \end{description*}
+
+\clearpage
+\section{Database Schema}
+    The database schema for the data structures described above is as follows.
+
+    \begin{verbatim}
+--
+-- Table structure for table `conversations`
+--
+
+DROP TABLE IF EXISTS `conversations`;
+CREATE TABLE `conversations` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `posts`
+--
+
+DROP TABLE IF EXISTS `posts`;
+CREATE TABLE `posts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` varchar(255) NOT NULL,
+  `conversation_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `conversation_id` (`conversation_id`),
+  CONSTRAINT `posts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`username`),
+  CONSTRAINT `posts_ibfk_2` FOREIGN KEY (`conversation_id`)
+        REFERENCES `conversations` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS `users`;
+CREATE TABLE `users` (
+  `username` varchar(255) NOT NULL,
+  `hash_password` varchar(255) DEFAULT NULL,
+  `deleted` tinyint(1) DEFAULT NULL,
+  PRIMARY KEY (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+    \end{verbatim}
+
+    % Force a new page because it's the easiest thing to do
+    \newpage
+
+    \begin{verbatim}
+--
+-- Table structure for table `votes`
+--
+
+DROP TABLE IF EXISTS `votes`;
+CREATE TABLE `votes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` varchar(255) NOT NULL,
+  `post_id` int(11) NOT NULL,
+  `value` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `post_id` (`post_id`),
+  CONSTRAINT `votes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`username`),
+  CONSTRAINT `votes_ibfk_2` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+    \end{verbatim}
 
 \end{document}
 
