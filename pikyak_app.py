@@ -107,11 +107,13 @@ def registerPeer(userID):
         return "", 400
 
     # TODO create User object here
+	user = User(username = request.authorization['username'])
+	
 
     password = request.authorization["password"]
-    peer.hash_new_password(password)
+    user.hash_new_password(password)
 
-    db.session.add(peer)
+    db.session.add(user)
     try:
         db.session.commit()
     except exc.IntegrityError:
@@ -123,8 +125,18 @@ def registerPeer(userID):
 
 @app.route("/users/<userID>", methods=["DELETE"])
 def unregisterPeer(userID):
-    # TODO
-    return "", 500
+	j = request.get_json()
+		if j is None:
+			# Bad request
+			return "", 400
+	user = db.query.filter_by(userID="userID").scalar()
+	if (user is not None):
+		db.session.delete(user)
+		db.session.commit()
+		return "", 204
+	else:
+		return "", 404
+		
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=app.config['DEBUG'])
