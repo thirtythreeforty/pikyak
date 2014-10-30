@@ -126,9 +126,10 @@ def registerPeer(userID):
 @app.route("/users/<userID>", methods=["DELETE"])
 def unregisterPeer(userID):
     j = request.get_json()
-        if j is None:
-            # Bad request
-            return "", 400
+    if j is None:
+        # Bad request
+        return "", 400
+
     user = db.query.filter_by(userID="userID").scalar()
     if (user is not None):
         db.session.delete(user)
