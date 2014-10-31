@@ -102,13 +102,13 @@ def verify_password(username, password):
 @app.route("/users/<userID>", methods=["PUT"])
 def registerPeer(userID):
     j = request.get_json()
-    if j is None:
+    if j is None \
+      or request.authorization is None:
         # Bad request
         return "", 400
 
     # TODO create User object here
-	user = User(username = request.authorization['username'])
-
+    user = User(username = request.authorization['username'])
 
     password = request.authorization["password"]
     user.hash_new_password(password)
