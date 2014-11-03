@@ -107,8 +107,10 @@ def registerPeer(userID):
         # Bad request
         return "", 400
 
-    # TODO create User object here
     user = User(username = request.authorization['username'])
+    _exportables_ = ["user_id"]
+    #user_id = ?
+    
 
     password = request.authorization["password"]
     user.hash_new_password(password)
