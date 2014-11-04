@@ -39,6 +39,7 @@ class User(db.Model, AsDictMixin):
     _exportables_ = []
     username = db.Column(db.String(maxIDlength), primary_key = True)
     hash_password = db.Column(db.String(maxIDlength))
+    gcm_id = db.Column(db.String)
     deleted = db.Column(db.Boolean)
     posts = db.relationship('Post', backref='user', cascade='delete')
 
@@ -108,13 +109,11 @@ def registerPeer(userID):
         return "", 400
 
     user = User(username = request.authorization['username'])
-    _exportables_ = ["user_id"]
-    #user_id = ?
-    
 
     password = request.authorization["password"]
     user.hash_new_password(password)
-
+    
+    db.session.add(j["gcm_id"])
     db.session.add(user)
     try:
         db.session.commit()
