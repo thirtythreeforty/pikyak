@@ -36,13 +36,14 @@ class User(db.Model, AsDictMixin):
     _exportables_ = []
     username = db.Column(db.String(maxIDlength), primary_key = True)
     hash_password = db.Column(db.String(maxIDlength))
-    gcm_id = db.Column(db.String)
+    gcm_id = db.Column(db.String(maxIDlength))
     deleted = db.Column(db.Boolean)
     posts = db.relationship('Post', backref='user', cascade='delete')
 
     def __init__(self, **args):
         self.username = args.get('username')
         self.deleted = False
+        self.gcm_id = args.get('gcm_id')
 
     # Authentication
     def hash_new_password(self, password):
@@ -98,19 +99,19 @@ def verify_password(username, password):
 # Views
 
 @app.route("/users/<userID>", methods=["PUT"])
-def registerPeer(userID):
+def registerUser(userID):
     j = request.get_json()
     if j is None \
-      or request.authorization is None:
+      or request.authorization is None \
+      or request.authorization['username'] != userID:
         # Bad request
         return "", 400
 
-    user = User(username = request.authorization['username'])
+    user = User(username = j.get('email'), gcm_id = j.get("gcm_id"))
 
     password = request.authorization["password"]
     user.hash_new_password(password)
     
-    db.session.add(j["gcm_id"])
     db.session.add(user)
     try:
         db.session.commit()
@@ -122,13 +123,13 @@ def registerPeer(userID):
     return "", 201
 
 @app.route("/users/<userID>", methods=["DELETE"])
-def unregisterPeer(userID):
-    j = request.get_json()
-    if j is None:
-        # Bad request
-        return "", 400
-
-    user = db.query.filter_by(userID="userID").scalar()
+@auth.login_required
+def unregisterUser(userID):
+    if userID != request.authorization['username']:
+        # prevent anyone from deleting users except their own
+        return "",403
+        
+    user = User.query.filter_by(username = userID).scalar()
     if (user is not None):
         db.session.delete(user)
         db.session.commit()
