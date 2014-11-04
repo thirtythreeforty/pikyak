@@ -12,12 +12,9 @@ app = Flask(__name__)
 
 app.config.update(dict(
     DEBUG=False,
-    SECRET_KEY='development key',
-    USERNAME='admin',
-    PASSWORD='default'
 ))
 app.config.from_envvar('PIKYAK_SETTINGS', silent=True)
-app.config["SQLALCHEMY_DATABASE_URI"]="mysql://localhost/pikyak"
+app.config["SQLALCHEMY_DATABASE_URI"]="mysql://username:password@localhost/dbname"
 db = SQLAlchemy(app)
 
 auth = HTTPBasicAuth()
