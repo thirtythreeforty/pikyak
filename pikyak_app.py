@@ -159,6 +159,22 @@ def unregisterUser(userID):
     else:
         return "", 404
 
+@app.route("/conversations", methods=["GET"])
+def listConversations():
+    conversations = Conversation.query.order_by(Conversation.id.desc()).paginate(int(request.args.get('first')) + 1, per_page=10).items
+
+    response = {
+        "conversations" : [
+            {
+                "id" : c.id,
+                "url" : url_for('listConversations', id = c.id),
+                "image" : images.url(c.posts[0].image),
+                "score" : random.randint(-2,11), # TODO
+            } for c in conversations
+        ]
+    }
+    return jsonify(response), 200
+
 @app.route("/conversations", methods=["POST"])
 @app.route("/conversations/<int:conversation_id>", methods = ["POST"])
 @auth.login_required
