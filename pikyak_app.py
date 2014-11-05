@@ -6,6 +6,8 @@ from flask.ext.httpauth import HTTPBasicAuth
 from sqlalchemy import exc, exists
 from sqlalchemy.orm.exc import NoResultFound
 from passlib.hash import sha256_crypt as crypt
+from uuid import uuid4
+from base64 import b64decode
 import os
 
 app = Flask(__name__)
@@ -36,12 +38,14 @@ class User(db.Model, AsDictMixin):
     _exportables_ = []
     username = db.Column(db.String(maxIDlength), primary_key = True)
     hash_password = db.Column(db.String(maxIDlength))
+    gcm_id = db.Column(db.String(maxIDlength))
     deleted = db.Column(db.Boolean)
     posts = db.relationship('Post', backref='user', cascade='delete')
 
     def __init__(self, **args):
         self.username = args.get('username')
         self.deleted = False
+        self.gcm_id = args.get('gcm_id')
 
     # Authentication
     def hash_new_password(self, password):
@@ -55,12 +59,16 @@ class Post(db.Model, AsDictMixin):
     __tablename__ = 'posts'
     _exportables_ = ['user_id', 'conversation_id']
     id = db.Column(db.Integer, primary_key = True)
+    image = db.Column(db.String(maxIDlength))
     user_id = db.Column(db.String(maxIDlength), db.ForeignKey('users.username'), nullable = False)
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable = False)
 
     def __init__(self, **args):
+        # Can pass either User object or user_id string
         self.user = args.get('user')
         self.user_id = args.get('user_id')
+        
+        # same as user above
         self.conversation = args.get('conversation')
         self.conversation_id = args.get('conversation_id')
 
@@ -97,18 +105,20 @@ def verify_password(username, password):
 # Views
 
 @app.route("/users/<userID>", methods=["PUT"])
-def registerPeer(userID):
+def registerUser(userID):
     j = request.get_json()
-    if j is None:
+    if j is None \
+      or request.authorization is None \
+      or request.authorization['username'] != userID:
         # Bad request
         return "", 400
 
-    # TODO create User object here
+    user = User(username = j.get("email"), gcm_id = j.get("gcm_id"))
 
     password = request.authorization["password"]
-    peer.hash_new_password(password)
-
-    db.session.add(peer)
+    user.hash_new_password(password)
+    
+    db.session.add(user)
     try:
         db.session.commit()
     except exc.IntegrityError:
@@ -119,9 +129,55 @@ def registerPeer(userID):
     return "", 201
 
 @app.route("/users/<userID>", methods=["DELETE"])
-def unregisterPeer(userID):
-    # TODO
-    return "", 500
+@auth.login_required
+def unregisterUser(userID):
+    if userID != request.authorization['username']:
+        # prevent anyone from deleting users except their own
+        return "",403
+        
+    user = User.query.filter_by(username = userID).scalar()
+    if (user is not None):
+        db.session.delete(user)
+        db.session.commit()
+        return "", 204
+    else:
+        return "", 404
+
+@app.route("/conversations", methods=["POST"])
+@auth.login_required
+def postNew():
+    j = request.get_json()
+    if j is None \
+      or request.authorization is None:
+        # Bad request
+        return "", 400
+    
+    # Ceate new conversation object for first post
+    post = Post(user_id = request.authorization["username"], conversation = Conversation())
+    
+    # Decode image from json
+    image = b64decode(j.get("image"))
+    
+    # Save locally to random filename
+    filename = "images/"
+    filename += uuid4().hex
+    filename += ".jpg"
+    
+    file = open(filename, "w")
+    file.write(image)
+    file.close()
+    
+    # store reference to the image in the db
+    # TODO: The image URL will be of the form "/image/{}" so you need a new GET /image/{} view.
+    post.image = filename
+    
+    db.session.add(post)
+    db.session.commit()
+    response = {
+        "id":post.id
+    }
+    # post successful!
+    return jsonify(response), 201
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=app.config['DEBUG'])
