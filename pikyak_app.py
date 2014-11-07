@@ -144,29 +144,33 @@ def unregisterUser(userID):
         return "", 404
 
 @app.route("/conversations", methods=["POST"])
+@app.route("/conversations/<int:conversation_id>", methods = ["POST"])
 @auth.login_required
-def postNew():
-    j = request.get_json()
-    if j is None \
-      or request.authorization is None:
+def postImage(conversation_id = None):
+    if request.files["image"] is None:
         # Bad request
         return "", 400
     
     # Ceate new conversation object for first post
-    post = Post(user_id = request.authorization["username"], conversation = Conversation())
+    if conversation_id is None:
+        post = Post(user_id = request.authorization["username"], conversation = Conversation())
+    else:
+        
+        conID = db.query(conversation_id = conversation_id).scalar()
+        if conID is None:
+            return "Conversation is not in database", 400
+            
+        post = Post(username = request.authorization["username"], conversation = conID)
     
     # Decode image from json
-    image = b64decode(j.get("image"))
+    image = request.files["image"]
     
     # Save locally to random filename
     filename = "images/"
     filename += uuid4().hex
     filename += ".jpg"
     
-    file = open(filename, "w")
-    file.write(image)
-    file.close()
-    
+    image.save(filename)    
     # store reference to the image in the db
     # TODO: The image URL will be of the form "/image/{}" so you need a new GET /image/{} view.
     post.image = filename
@@ -174,10 +178,12 @@ def postNew():
     db.session.add(post)
     db.session.commit()
     response = {
-        "id":post.id
+        "id":post.id,
+        "conversation_id":conversation_id
     }
     # post successful!
     return jsonify(response), 201
+    
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=app.config['DEBUG'])
