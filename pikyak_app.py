@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 
-from flask import Flask, request, g, jsonify, url_for
+from flask import Flask, request, g, jsonify, url_for, safe_join, send_from_directory
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.httpauth import HTTPBasicAuth
 from sqlalchemy import exc, exists
@@ -171,7 +171,6 @@ def postImage(conversation_id = None):
 
     image.save(filename)
     # store reference to the image in the db
-    # TODO: The image URL will be of the form "/image/{}" so you need a new GET /image/{} view.
     post.image = filename
 
     db.session.add(post)
@@ -183,6 +182,10 @@ def postImage(conversation_id = None):
     # post successful!
     return jsonify(response), 201
 
+@app.route("/images/<path:filename>", methods = ["GET"])
+def getImage(filename):
+    # TODO: ensure the client gets a 404 if they pass something nasty like ../../../../etc/passwd.
+    return send_from_directory("images", filename)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=app.config['DEBUG'])
