@@ -7,7 +7,6 @@ from sqlalchemy import exc, exists
 from sqlalchemy.orm.exc import NoResultFound
 from passlib.hash import sha256_crypt as crypt
 from uuid import uuid4
-from base64 import b64decode
 import os
 
 app = Flask(__name__)
@@ -62,6 +61,7 @@ class Post(db.Model, AsDictMixin):
     image = db.Column(db.String(maxIDlength))
     user_id = db.Column(db.String(maxIDlength), db.ForeignKey('users.username'), nullable = False)
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable = False)
+    block = db.Column(db.Boolean)
 
     def __init__(self, **args):
         # Can pass either User object or user_id string
@@ -71,12 +71,18 @@ class Post(db.Model, AsDictMixin):
         # same as user above
         self.conversation = args.get('conversation')
         self.conversation_id = args.get('conversation_id')
+        
+        self.block = False
 
 class Conversation(db.Model, AsDictMixin):
     __tablename__ = 'conversations'
     _exportables_ = ['posts']
     id = db.Column(db.Integer, primary_key = True)
+    block = db.Column(db.Boolean)
     posts = db.relationship('Post', backref='conversation')
+    
+    def __init__(self, **args):
+        self.block = False
 
 class Vote(db.Model, AsDictMixin):
     __tablename__ = 'votes'
@@ -183,6 +189,68 @@ def postImage(conversation_id = None):
     }
     # post successful!
     return jsonify(response), 201
+
+# Functions should be combined but unsure how to manage the app.routes
+@app.route("/posts/<int:post_id>/block", methods=["PUT"])
+# TODO: Must be a moderator
+@auth.login_required
+def deletePost(post_id):
+    if Post.query(post_id) is None:
+        # Post not in database
+        return "", 400
+    post = Post.query.get(post_id)
+    post.block =  True
+    
+    db.session.add(post)
+    db.session.commit()
+    # Post deleted
+    return "", 204
+
+@app.route("/conversations/<int:conversation_id>/block", methods = ["PUT"])
+# TODO: Must be a moderator
+@auth.login_required
+def deleteConversation(conversation_id):
+    if Conversation.query(conversation_id) is None:
+        # Conversation not in database
+        return "", 400
+    conversation = Conversation.query.get(conversation_id)
+    conversation.block = True
+    
+    db.session.add(conversation)
+    db.session.commit()
+    # Conversation deleted
+    return "",204
+    
+# Should also be combined
+@app.route("/posts/<int:post_id>/block", methods=["DELETE"])
+# TODO: Must be a moderator
+@auth.login_required
+def deletePost(post_id):
+    if Post.query(post_id) is None:
+        # Post not in database
+        return "", 400
+    post = Post.query.get(post_id)
+    post.block =  False
+    
+    db.session.add(post)
+    db.session.commit()
+    # Post undeleted
+    return "", 201
+
+@app.route("/conversations/<int:conversation_id>/block", methods = ["DELETE"])
+# TODO: Must be a moderator
+@auth.login_required
+def deleteConversation(conversation_id):
+    if Conversation.query(conversation_id) is None:
+        # Conversation not in database
+        return "", 400
+    conversation = Conversation.query.get(conversation_id)
+    conversation.block = False
+    
+    db.session.add(conversation)
+    db.session.commit()
+    # Conversation undeleted
+    return "",201
     
 
 if __name__ == "__main__":
