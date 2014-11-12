@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 
-from flask import Flask, request, g, jsonify, url_for
+from flask import Flask, request, g, jsonify, url_for, safe_join, send_from_directory
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.httpauth import HTTPBasicAuth
 from sqlalchemy import exc, exists
@@ -67,7 +67,7 @@ class Post(db.Model, AsDictMixin):
         # Can pass either User object or user_id string
         self.user = args.get('user')
         self.user_id = args.get('user_id')
-        
+
         # same as user above
         self.conversation = args.get('conversation')
         self.conversation_id = args.get('conversation_id')
@@ -123,7 +123,7 @@ def registerUser(userID):
 
     password = request.authorization["password"]
     user.hash_new_password(password)
-    
+
     db.session.add(user)
     try:
         db.session.commit()
@@ -140,7 +140,7 @@ def unregisterUser(userID):
     if userID != request.authorization['username']:
         # prevent anyone from deleting users except their own
         return "",403
-        
+
     user = User.query.filter_by(username = userID).scalar()
     if (user is not None):
         db.session.delete(user)
@@ -156,31 +156,29 @@ def postImage(conversation_id = None):
     if request.files["image"] is None:
         # Bad request
         return "", 400
-    
+
     # Ceate new conversation object for first post
     if conversation_id is None:
         post = Post(user_id = request.authorization["username"], conversation = Conversation())
     else:
-        
+
         conID = db.query(conversation_id = conversation_id).scalar()
         if conID is None:
             return "Conversation is not in database", 400
-            
+
         post = Post(username = request.authorization["username"], conversation = conID)
-    
-    # Decode image from json
+
     image = request.files["image"]
-    
+
     # Save locally to random filename
     filename = "images/"
     filename += uuid4().hex
     filename += ".jpg"
-    
-    image.save(filename)    
+
+    image.save(filename)
     # store reference to the image in the db
-    # TODO: The image URL will be of the form "/image/{}" so you need a new GET /image/{} view.
     post.image = filename
-    
+
     db.session.add(post)
     db.session.commit()
     response = {
@@ -252,6 +250,10 @@ def deleteConversation(conversation_id):
     # Conversation undeleted
     return "",201
     
+@app.route("/images/<path:filename>", methods = ["GET"])
+def getImage(filename):
+    # TODO: ensure the client gets a 404 if they pass something nasty like ../../../../etc/passwd.
+    return send_from_directory("images", filename)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=app.config['DEBUG'])
