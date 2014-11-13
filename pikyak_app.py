@@ -185,7 +185,7 @@ def createVote(post_id):
         # Bad request
         return "",400
     
-    vote = Vote.query.filter_by(post_id = post_id).scalar()
+    vote = Vote.query.filter_by(post_id = post_id, user_id = g.user.user_id).scalar()
     if vote is None:
         vote = Vote( user = g.user, post_id = post_id)
     vote.value = int(j.get("user_score"))
@@ -193,7 +193,21 @@ def createVote(post_id):
     db.session.add(vote)
     db.session.commit()
     # Request succeeded  
-    return "", 201 
+    return "", 201
+    
+@app.route("/posts/<int:post_id>/user_score", methods=["DELETE"])
+@auth.login_required
+def removeVote(post_id):
+    vote = Vote.query.filter_by(post_id = post_id, user_id = g.user.user_id).scalar()
+    if vote is None:
+        # Bad request: Post does not exist
+        return "", 400
+    
+    vote.value = None
+    db.session.add(vote)
+    db.session.commit()
+    # Success: No Content
+    return "", 204
     
 
 @app.route("/conversations", methods=["GET"])
