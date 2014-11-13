@@ -39,6 +39,7 @@ class User(db.Model, AsDictMixin):
     hash_password = db.Column(db.String(maxIDlength))
     gcm_id = db.Column(db.String(maxIDlength))
     deleted = db.Column(db.Boolean)
+    is_moderator = db.Column(db.Boolean)
     posts = db.relationship('Post', backref='user', cascade='delete')
 
     def __init__(self, **args):
@@ -190,9 +191,11 @@ def postImage(conversation_id = None):
 
 # Functions should be combined but unsure how to manage the app.routes
 @app.route("/posts/<int:post_id>/block", methods=["PUT"])
-# TODO: Must be a moderator
 @auth.login_required
 def deletePost(post_id):
+    if User.query(is_moderator) is False:
+        # Forbidden, must be a moderator
+        return "", 403
     if Post.query(post_id) is None:
         # Post not in database
         return "", 400
@@ -205,9 +208,11 @@ def deletePost(post_id):
     return "", 204
 
 @app.route("/conversations/<int:conversation_id>/block", methods = ["PUT"])
-# TODO: Must be a moderator
 @auth.login_required
 def deleteConversation(conversation_id):
+    if User.query(is_moderator) is False:
+        # Forbidden, must be a moderator
+        return "", 403
     if Conversation.query(conversation_id) is None:
         # Conversation not in database
         return "", 400
@@ -221,9 +226,11 @@ def deleteConversation(conversation_id):
     
 # Should also be combined
 @app.route("/posts/<int:post_id>/block", methods=["DELETE"])
-# TODO: Must be a moderator
 @auth.login_required
 def restorePost(post_id):
+    if User.query(is_moderator) is False:
+        # Forbidden, must be a moderator
+        return "", 403
     if Post.query(post_id) is None:
         # Post not in database
         return "", 400
@@ -236,9 +243,11 @@ def restorePost(post_id):
     return "", 201
 
 @app.route("/conversations/<int:conversation_id>/block", methods = ["DELETE"])
-# TODO: Must be a moderator
 @auth.login_required
 def restoreConversation(conversation_id):
+    if User.query(is_moderator) is False:
+        # Forbidden, must be a moderator
+        return "", 403
     if Conversation.query(conversation_id) is None:
         # Conversation not in database
         return "", 400
