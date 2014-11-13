@@ -223,7 +223,7 @@ def deleteConversation(conversation_id):
 @app.route("/posts/<int:post_id>/block", methods=["DELETE"])
 # TODO: Must be a moderator
 @auth.login_required
-def deletePost(post_id):
+def restorePost(post_id):
     if Post.query(post_id) is None:
         # Post not in database
         return "", 400
@@ -238,7 +238,7 @@ def deletePost(post_id):
 @app.route("/conversations/<int:conversation_id>/block", methods = ["DELETE"])
 # TODO: Must be a moderator
 @auth.login_required
-def deleteConversation(conversation_id):
+def restoreConversation(conversation_id):
     if Conversation.query(conversation_id) is None:
         # Conversation not in database
         return "", 400
