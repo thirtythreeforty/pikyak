@@ -193,7 +193,7 @@ def postImage(conversation_id = None):
 @app.route("/posts/<int:post_id>/block", methods=["PUT"])
 @auth.login_required
 def deletePost(post_id):
-    if User.query(is_moderator) is False:
+    if not g.user.is_moderator:
         # Forbidden, must be a moderator
         return "", 403
     if Post.query(post_id) is None:
@@ -210,7 +210,7 @@ def deletePost(post_id):
 @app.route("/conversations/<int:conversation_id>/block", methods = ["PUT"])
 @auth.login_required
 def deleteConversation(conversation_id):
-    if User.query(is_moderator) is False:
+    if not g.user.is_moderator:
         # Forbidden, must be a moderator
         return "", 403
     if Conversation.query(conversation_id) is None:
@@ -228,7 +228,7 @@ def deleteConversation(conversation_id):
 @app.route("/posts/<int:post_id>/block", methods=["DELETE"])
 @auth.login_required
 def restorePost(post_id):
-    if User.query(is_moderator) is False:
+    if not g.user.is_moderator:
         # Forbidden, must be a moderator
         return "", 403
     if Post.query(post_id) is None:
@@ -245,7 +245,7 @@ def restorePost(post_id):
 @app.route("/conversations/<int:conversation_id>/block", methods = ["DELETE"])
 @auth.login_required
 def restoreConversation(conversation_id):
-    if User.query(is_moderator) is False:
+    if not g.user.is_moderator:
         # Forbidden, must be a moderator
         return "", 403
     if Conversation.query(conversation_id) is None:
