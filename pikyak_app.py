@@ -3,22 +3,31 @@
 from flask import Flask, request, g, jsonify, url_for, safe_join, send_from_directory
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.httpauth import HTTPBasicAuth
+from flask.ext.uploads import UploadSet, IMAGES, configure_uploads
 from sqlalchemy import exc, exists
 from sqlalchemy.orm.exc import NoResultFound
 from passlib.hash import sha256_crypt as crypt
 from uuid import uuid4
 import os
+import random
 
 app = Flask(__name__)
 
 app.config.update(dict(
     DEBUG=False,
+    ALLOWED_EXTENSIONS=set(['jpg', 'gif', 'png']),
+    MAX_CONTENT_LENGTH = 1024 * 1024 * 16,
+
+    UPLOADED_IMAGES_DEST = "images",
 ))
 app.config.from_envvar('PIKYAK_SETTINGS', silent=True)
 app.config["SQLALCHEMY_DATABASE_URI"]="mysql://username:password@localhost/dbname"
 db = SQLAlchemy(app)
 
 auth = HTTPBasicAuth()
+
+images = UploadSet('images', IMAGES, default_dest = lambda app: app.instance_root)
+configure_uploads(app, (images,))
 
 # Models
 maxIDlength = 255
@@ -72,7 +81,7 @@ class Post(db.Model, AsDictMixin):
         # same as user above
         self.conversation = args.get('conversation')
         self.conversation_id = args.get('conversation_id')
-        
+
         self.block = False
 
 class Conversation(db.Model, AsDictMixin):
@@ -81,7 +90,7 @@ class Conversation(db.Model, AsDictMixin):
     id = db.Column(db.Integer, primary_key = True)
     block = db.Column(db.Boolean)
     posts = db.relationship('Post', backref='conversation')
-    
+
     def __init__(self, **args):
         self.block = False
 
@@ -150,6 +159,22 @@ def unregisterUser(userID):
     else:
         return "", 404
 
+@app.route("/conversations", methods=["GET"])
+def listConversations():
+    conversations = Conversation.query.order_by(Conversation.id.desc()).paginate(int(request.args.get('first')) + 1, per_page=10).items
+
+    response = {
+        "conversations" : [
+            {
+                "id" : c.id,
+                "url" : url_for('listConversations', id = c.id),
+                "image" : images.url(c.posts[0].image),
+                "score" : random.randint(-2,11), # TODO
+            } for c in conversations
+        ]
+    }
+    return jsonify(response), 200
+
 @app.route("/conversations", methods=["POST"])
 @app.route("/conversations/<int:conversation_id>", methods = ["POST"])
 @auth.login_required
@@ -163,20 +188,16 @@ def postImage(conversation_id = None):
         post = Post(user_id = request.authorization["username"], conversation = Conversation())
     else:
 
-        conID = db.query(conversation_id = conversation_id).scalar()
-        if conID is None:
+        conversation = db.query(conversation_id = conversation_id).scalar()
+        if conversation is None:
             return "Conversation is not in database", 400
 
-        post = Post(username = request.authorization["username"], conversation = conID)
-
-    image = request.files["image"]
+        post = Post(username = request.authorization["username"], conversation = conversation)
 
     # Save locally to random filename
-    filename = "images/"
-    filename += uuid4().hex
-    filename += ".jpg"
+    filename = uuid4().hex + "." # flask-uploads will append the correct extension if the filename ends in '.'
+    filename = images.save(request.files["image"], name = filename)
 
-    image.save(filename)
     # store reference to the image in the db
     post.image = filename
 
@@ -201,7 +222,7 @@ def deletePost(post_id):
         return "", 400
     post = Post.query.get(post_id)
     post.block =  True
-    
+
     db.session.add(post)
     db.session.commit()
     # Post deleted
@@ -218,12 +239,12 @@ def deleteConversation(conversation_id):
         return "", 400
     conversation = Conversation.query.get(conversation_id)
     conversation.block = True
-    
+
     db.session.add(conversation)
     db.session.commit()
     # Conversation deleted
     return "",204
-    
+
 # Should also be combined
 @app.route("/posts/<int:post_id>/block", methods=["DELETE"])
 @auth.login_required
@@ -236,7 +257,7 @@ def restorePost(post_id):
         return "", 400
     post = Post.query.get(post_id)
     post.block =  False
-    
+
     db.session.add(post)
     db.session.commit()
     # Post undeleted
@@ -253,12 +274,12 @@ def restoreConversation(conversation_id):
         return "", 400
     conversation = Conversation.query.get(conversation_id)
     conversation.block = False
-    
+
     db.session.add(conversation)
     db.session.commit()
     # Conversation undeleted
     return "",201
-    
+
 @app.route("/images/<path:filename>", methods = ["GET"])
 def getImage(filename):
     # TODO: ensure the client gets a 404 if they pass something nasty like ../../../../etc/passwd.
