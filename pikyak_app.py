@@ -158,6 +158,20 @@ def unregisterUser(userID):
         return "", 204
     else:
         return "", 404
+        
+@app.route("/users/<int:user_id>", methods=["GET"])
+@auth.login_required
+def getUser(user_id):
+    user = g.user
+    if user.user_id != user_id: 
+        # Bad request
+        return "", 400
+    
+    response = {
+        "user_id" : user.user_id,
+        "is_moderator" : user.is_moderator
+    }
+    return jsonify(response), 200
 
 @app.route("/conversations", methods=["GET"])
 def listConversations():
