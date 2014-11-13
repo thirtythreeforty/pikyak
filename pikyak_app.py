@@ -172,6 +172,29 @@ def getUser(user_id):
         "is_moderator" : user.is_moderator
     }
     return jsonify(response), 200
+    
+@app.route("/posts/<int:post_id>/user_score", methods=["PUT"])
+@auth.login_required
+def createVote(post_id):
+    j = request.get_json()
+    if j is None:
+        # Bad request
+        return "", 400
+    
+    if abs(j.get("user_score")) != 1:
+        # Bad request
+        return "",400
+    
+    vote = Vote.query.filter_by(post_id = post_id).scalar()
+    if vote is None:
+        vote = Vote( user = g.user, post_id = post_id)
+    vote.value = int(j.get("user_score"))
+    
+    db.session.add(vote)
+    db.session.commit()
+    # Request succeeded  
+    return "", 201 
+    
 
 @app.route("/conversations", methods=["GET"])
 def listConversations():
