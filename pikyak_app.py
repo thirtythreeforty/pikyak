@@ -50,6 +50,7 @@ class User(db.Model, AsDictMixin):
     deleted = db.Column(db.Boolean)
     is_moderator = db.Column(db.Boolean)
     posts = db.relationship('Post', backref='user', cascade='delete')
+    votes = db.relationship('Vote', backref='user', cascade='delete')
 
     def __init__(self, **args):
         self.username = args.get('username')
@@ -72,6 +73,7 @@ class Post(db.Model, AsDictMixin):
     user_id = db.Column(db.String(maxIDlength), db.ForeignKey('users.username'), nullable = False)
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable = False)
     block = db.Column(db.Boolean)
+    votes = db.relationship('Vote', backref='post')
 
     def __init__(self, **args):
         # Can pass either User object or user_id string
@@ -181,14 +183,14 @@ def createVote(post_id):
         # Bad request
         return "", 400
     
-    if abs(j.get("user_score")) != 1:
+    if abs(j.get("value")) != 1:
         # Bad request
         return "",400
     
-    vote = Vote.query.filter_by(post_id = post_id, user_id = g.user.user_id).scalar()
+    vote = Vote.query.filter_by(post_id = post_id, user_id = g.user.username).scalar()
     if vote is None:
         vote = Vote( user = g.user, post_id = post_id)
-    vote.value = int(j.get("user_score"))
+    vote.value = int(j.get("value"))
     
     db.session.add(vote)
     db.session.commit()
@@ -198,7 +200,7 @@ def createVote(post_id):
 @app.route("/posts/<int:post_id>/user_score", methods=["DELETE"])
 @auth.login_required
 def removeVote(post_id):
-    vote = Vote.query.filter_by(post_id = post_id, user_id = g.user.user_id).scalar()
+    vote = Vote.query.filter_by(post_id = post_id, user_id = g.user.username).scalar()
     if vote is None:
         # Bad request: Post does not exist
         return "", 400
@@ -213,14 +215,16 @@ def removeVote(post_id):
 @app.route("/conversations", methods=["GET"])
 def listConversations():
     conversations = Conversation.query.order_by(Conversation.id.desc()).paginate(int(request.args.get('first')) + 1, per_page=10).items
-
+    
     response = {
         "conversations" : [
             {
                 "id" : c.id,
                 "url" : url_for('listConversations', id = c.id),
                 "image" : images.url(c.posts[0].image),
-                "score" : random.randint(-2,11), # TODO
+                "score" : sum([
+                    v.value for v in c.posts[0].votes
+                ])
             } for c in conversations
         ]
     }
