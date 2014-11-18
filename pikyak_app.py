@@ -73,7 +73,8 @@ class Post(db.Model, AsDictMixin):
     user_id = db.Column(db.String(maxIDlength), db.ForeignKey('users.username'), nullable = False)
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable = False)
     block = db.Column(db.Boolean)
-    votes = db.relationship('Vote', backref='post')
+    score = db.Column(db.Integer)
+    votes = db.relationship('Vote', backref='post', cascade='delete')
 
     def __init__(self, **args):
         # Can pass either User object or user_id string
@@ -85,7 +86,8 @@ class Post(db.Model, AsDictMixin):
         self.conversation_id = args.get('conversation_id')
 
         self.block = False
-
+        self.score = 0
+        
 class Conversation(db.Model, AsDictMixin):
     __tablename__ = 'conversations'
     _exportables_ = ['posts']
@@ -189,10 +191,15 @@ def createVote(post_id):
     
     vote = Vote.query.filter_by(post_id = post_id, user_id = g.user.username).scalar()
     if vote is None:
-        vote = Vote( user = g.user, post_id = post_id)
-    vote.value = int(j.get("value"))
+        vote = Vote( user = g.user, post_id = post_id, value = j.get("value"))
+    else:
+        vote.post.score -= vote.value
+        vote.value = j.get("value")
+        
+    vote.post.score += vote.value
     
     db.session.add(vote)
+    db.session.add(vote.post)
     db.session.commit()
     # Request succeeded  
     return "", 201
@@ -204,9 +211,12 @@ def removeVote(post_id):
     if vote is None:
         # Bad request: Post does not exist
         return "", 400
-    
-    vote.value = None
-    db.session.add(vote)
+
+    post = Post.query.get(post_id)
+        
+    post.score -= vote.value
+    db.session.add(post)
+    db.session.delete(vote)
     db.session.commit()
     # Success: No Content
     return "", 204
@@ -222,10 +232,25 @@ def listConversations():
                 "id" : c.id,
                 "url" : url_for('listConversations', id = c.id),
                 "image" : images.url(c.posts[0].image),
-                "score" : sum([
-                    v.value for v in c.posts[0].votes
-                ])
-            } for c in conversations
+                "score" : c.posts[0].score,
+                # TODO: user score
+            } for c in conversations if c.posts[0].score > -5
+        ]
+    }
+    return jsonify(response), 200
+
+@app.route("/conversations/<int:conversation_id>", methods=["GET"])
+def listPosts():
+    posts = Post.query.order_by(Post.id.desc()).paginate(int(request.args.get('first')) + 1, per_page=10).items
+    
+    response = {
+        "posts" : [
+            {
+                "id" : p.id,
+                "image" : images.url(p.posts[0].image),
+                "score" : p.posts[0].score,
+                # TODO: user score
+            } for p in posts if p.posts[0].score > -5
         ]
     }
     return jsonify(response), 200
