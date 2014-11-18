@@ -192,14 +192,16 @@ def createVote(post_id):
     vote = Vote.query.filter_by(post_id = post_id, user_id = g.user.username).scalar()
     if vote is None:
         vote = Vote( user = g.user, post_id = post_id, value = j.get("value"))
+        post = Post.query.get(post_id)
     else:
-        vote.post.score -= vote.value
+        post = vote.post
+        post.score -= vote.value
         vote.value = j.get("value")
-        
-    vote.post.score += vote.value
-    
+
+    post.score += vote.value
+
     db.session.add(vote)
-    db.session.add(vote.post)
+    db.session.add(post)
     db.session.commit()
     # Request succeeded  
     return "", 201
