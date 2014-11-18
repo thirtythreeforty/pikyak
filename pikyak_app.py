@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 
-from flask import Flask, request, g, jsonify, url_for, safe_join, send_from_directory
+from flask import Flask, request, g, jsonify, url_for, safe_join, send_from_directory, redirect
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.httpauth import HTTPBasicAuth
 from flask.ext.uploads import UploadSet, IMAGES, configure_uploads
@@ -72,8 +72,8 @@ class Post(db.Model, AsDictMixin):
     image = db.Column(db.String(maxIDlength))
     user_id = db.Column(db.String(maxIDlength), db.ForeignKey('users.username'), nullable = False)
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable = False)
-    block = db.Column(db.Boolean)
-    score = db.Column(db.Integer)
+    block = db.Column(db.Boolean, nullable = False)
+    score = db.Column(db.Integer, nullable = False)
     votes = db.relationship('Vote', backref='post', cascade='delete')
 
     def __init__(self, **args):
@@ -223,7 +223,7 @@ def removeVote(post_id):
     
 @app.route("/conversations/<int:conversation_id>/user_score", methods=["PUT","DELETE"])
 @auth.login_required
-def voteConversation():
+def voteConversation(conversation_id):
     j = request.get_json()
     if j is None:
         # Bad request
@@ -232,9 +232,9 @@ def voteConversation():
     conversation = Conversation.query.get(conversation_id)
     
     if request.method == "PUT":
-        redirect(url_for('createVote', post_id = conversation.posts[0].id))
+        return createVote(post_id = conversation.posts[0].id)
     else:
-        redirect(url_for('removeVote', post_id = conversation.posts[0].id))
+        return removeVote(post_id = conversation.posts[0].id)
     
 
 @app.route("/conversations", methods=["GET"])
@@ -263,19 +263,28 @@ def listConversations():
     return jsonify(response), 200
 
 @app.route("/conversations/<int:conversation_id>", methods=["GET"])
-def listPosts():
+def listPosts(conversation_id):
     posts = Post.query.order_by(Post.id.desc()).paginate(int(request.args.get('first')) + 1, per_page=10).items
     
-    response = {
-        "posts" : [
+    response = {"posts":[]}
+    for p in posts:
+        if p.posts[0].score <= -5:
+            continue
+        user_score = 0
+        if request.authorization is not None:
+            vote = Vote.query(user_id  = request.authorization["username"]).scalar()
+            if vote is not None:
+                user_score = vote.value
+        response["conversations"].append(
             {
                 "id" : p.id,
+                "url" : url_for('listPosts', id = p.id),
                 "image" : images.url(p.posts[0].image),
                 "score" : p.posts[0].score,
-                # TODO: user score
-            } for p in posts if p.posts[0].score > -5
-        ]
-    }
+                "user_score" : user_score
+            }
+        )
+        
     return jsonify(response), 200
 
 @app.route("/conversations", methods=["POST"])
@@ -291,11 +300,11 @@ def postImage(conversation_id = None):
         post = Post(user_id = request.authorization["username"], conversation = Conversation())
     else:
 
-        conversation = db.query(conversation_id = conversation_id).scalar()
+        conversation = Conversation.query.get(conversation_id)
         if conversation is None:
             return "Conversation is not in database", 400
 
-        post = Post(username = request.authorization["username"], conversation = conversation)
+        post = Post(user_id = request.authorization["username"], conversation = conversation)
 
     # Save locally to random filename
     filename = uuid4().hex + "." # flask-uploads will append the correct extension if the filename ends in '.'
