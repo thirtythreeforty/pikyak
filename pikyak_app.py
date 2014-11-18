@@ -162,7 +162,7 @@ def unregisterUser(userID):
         return "", 204
     else:
         return "", 404
-        
+               
 @app.route("/users/<int:user_id>", methods=["GET"])
 @auth.login_required
 def getUser(user_id):
@@ -221,22 +221,45 @@ def removeVote(post_id):
     # Success: No Content
     return "", 204
     
+@app.route("/conversations/<int:conversation_id>/user_score", methods=["PUT","DELETE"])
+@auth.login_required
+def voteConversation():
+    j = request.get_json()
+    if j is None:
+        # Bad request
+        return "", 400
+        
+    conversation = Conversation.query.get(conversation_id)
+    
+    if request.method == "PUT":
+        redirect(url_for('createVote', post_id = conversation.posts[0].id))
+    else:
+        redirect(url_for('removeVote', post_id = conversation.posts[0].id))
+    
 
 @app.route("/conversations", methods=["GET"])
 def listConversations():
     conversations = Conversation.query.order_by(Conversation.id.desc()).paginate(int(request.args.get('first')) + 1, per_page=10).items
     
-    response = {
-        "conversations" : [
+    response = {"conversations":[]}
+    for c in conversations:
+        if c.posts[0].score <= -5:
+            continue
+        user_score = 0
+        if request.authorization is not None:
+            vote = Vote.query(user_id  = request.authorization["username"]).scalar()
+            if vote is not None:
+                user_score = vote.value
+        response["conversations"].append(
             {
                 "id" : c.id,
                 "url" : url_for('listConversations', id = c.id),
                 "image" : images.url(c.posts[0].image),
                 "score" : c.posts[0].score,
-                # TODO: user score
-            } for c in conversations if c.posts[0].score > -5
-        ]
-    }
+                "user_score" : user_score
+            }
+        )
+ 
     return jsonify(response), 200
 
 @app.route("/conversations/<int:conversation_id>", methods=["GET"])
