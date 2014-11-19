@@ -74,7 +74,10 @@ class Post(db.Model, AsDictMixin):
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable = False)
     block = db.Column(db.Boolean, nullable = False)
     score = db.Column(db.Integer, nullable = False)
+    num_flags = db.Column(db.Integer, nullable = False)
     votes = db.relationship('Vote', backref='post', cascade='delete')
+    flags = db.relationship('Flag', backref='post', cascade='delete')
+    
 
     def __init__(self, **args):
         # Can pass either User object or user_id string
@@ -105,6 +108,21 @@ class Vote(db.Model, AsDictMixin):
     user_id = db.Column(db.String(maxIDlength), db.ForeignKey('users.username'), nullable = False)
     post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable = False)
     value = db.Column(db.Integer, nullable = False)
+
+    def __init__(self, **args):
+        self.user = args.get('user')
+        self.user_id = args.get('user_id')
+        self.post = args.get('post')
+        self.post_id = args.get('post_id')
+        self.value = args.get('value')
+        
+class Flag(db.Model, AsDictMixin):
+    __tablename__ = 'flags'
+    _exportables = []
+    id = db.Column(db.Integer, primary_key = True)
+    user_id = db.Column(db.String(maxIDlength), db.ForeignKey('users.username'), nullable = False)
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable = False)
+    value = db.Column(db.Boolean, nullable = False)
 
     def __init__(self, **args):
         self.user = args.get('user')
@@ -266,23 +284,22 @@ def listConversations():
 
 @app.route("/conversations/<int:conversation_id>", methods=["GET"])
 def listPosts(conversation_id):
-    posts = Post.query.order_by(Post.id.desc()).paginate(int(request.args.get('first')) + 1, per_page=10).items
+    posts = Post.query.order_by(Post.id.asc()).paginate(int(request.args.get('first')) + 1, per_page=10).items
     
     response = {"posts":[]}
     for p in posts:
-        if p.posts[0].score <= -5:
+        if p.score <= -5:
             continue
         user_score = 0
         if request.authorization is not None:
             vote = Vote.query(user_id  = request.authorization["username"]).scalar()
             if vote is not None:
                 user_score = vote.value
-        response["conversations"].append(
+        response["posts"].append(
             {
                 "id" : p.id,
-                "url" : url_for('listPosts', id = p.id),
-                "image" : images.url(p.posts[0].image),
-                "score" : p.posts[0].score,
+                "image" : images.url(p.image),
+                "score" : p.score,
                 "user_score" : user_score
             }
         )
@@ -301,7 +318,6 @@ def postImage(conversation_id = None):
     if conversation_id is None:
         post = Post(user_id = request.authorization["username"], conversation = Conversation())
     else:
-
         conversation = Conversation.query.get(conversation_id)
         if conversation is None:
             return "Conversation is not in database", 400
@@ -324,79 +340,91 @@ def postImage(conversation_id = None):
     # post successful!
     return jsonify(response), 201
 
-# Functions should be combined but unsure how to manage the app.routes
-@app.route("/posts/<int:post_id>/block", methods=["PUT"])
+@app.route("/posts/<int:post_id>/block", methods=["PUT","DELETE"])
 @auth.login_required
 def deletePost(post_id):
     if not g.user.is_moderator:
         # Forbidden, must be a moderator
         return "", 403
-    if Post.query(post_id) is None:
+    post = Post.query.get(post_id)
+    if post is None:
         # Post not in database
         return "", 400
-    post = Post.query.get(post_id)
-    post.block =  True
+        
+    if request.method == "PUT":
+       post.block =  True
+       db.session.add(post)
+       db.session.commit()
+       # Post deleted
+       return "", 204 
+    else:
+        post.block = False
+        db.session.add(post)
+        db.session.commit()
+        # Post restored
+        return "", 201
 
-    db.session.add(post)
-    db.session.commit()
-    # Post deleted
-    return "", 204
-
-@app.route("/conversations/<int:conversation_id>/block", methods = ["PUT"])
+@app.route("/conversations/<int:conversation_id>/block", methods = ["PUT","DELETE"])
 @auth.login_required
 def deleteConversation(conversation_id):
     if not g.user.is_moderator:
         # Forbidden, must be a moderator
         return "", 403
-    if Conversation.query(conversation_id) is None:
+    conversation = Conversation.query.get(conversation_id)
+    if conversation is None:
         # Conversation not in database
         return "", 400
-    conversation = Conversation.query.get(conversation_id)
-    conversation.block = True
+    if request.method == "PUT":  
+        conversation.block = True
+        db.session.add(conversation)
+        db.session.commit()
+        # Conversation deleted
+        return "",204
+    else:
+        conversation.block = True
+        db.session.add(conversation)
+        db.session.commit()
+        # Conversation undeleted
+        return "",201
 
-    db.session.add(conversation)
-    db.session.commit()
-    # Conversation deleted
-    return "",204
-
-# Should also be combined
-@app.route("/posts/<int:post_id>/block", methods=["DELETE"])
+@app.route("/posts/{int:post_id}/flag", methods = ["PUT"])
 @auth.login_required
-def restorePost(post_id):
-    if not g.user.is_moderator:
-        # Forbidden, must be a moderator
-        return "", 403
-    if Post.query(post_id) is None:
-        # Post not in database
-        return "", 400
+def flagPost(post_id):
     post = Post.query.get(post_id)
-    post.block =  False
+    if post is None:
+        # Post not in database
+        return "",400
+    
+    flag = Flag.query.filter_by(post_id = post_id, user_id = g.user.username).scalar(),
+    if flag is None:
+        flag = Flag(user = g.user, post_id = post_id, value = 1)
+        post = Post.query.get(post_id)
+    else:
+        post = flag.post
+        post.num_flags -= flag.value
+        flag.value = 1
 
+    post.num_flags += flag.value
+
+    db.session.add(flag)
     db.session.add(post)
     db.session.commit()
-    # Post undeleted
+    # Request succeeded  
     return "", 201
-
-@app.route("/conversations/<int:conversation_id>/block", methods = ["DELETE"])
+    
+@app.route("/conversations/{int:conversation_id}/flag", methods = ["PUT"])
 @auth.login_required
-def restoreConversation(conversation_id):
-    if not g.user.is_moderator:
-        # Forbidden, must be a moderator
-        return "", 403
-    if Conversation.query(conversation_id) is None:
-        # Conversation not in database
-        return "", 400
+def flagConversation(conversation_id):
     conversation = Conversation.query.get(conversation_id)
-    conversation.block = False
-
-    db.session.add(conversation)
-    db.session.commit()
-    # Conversation undeleted
-    return "",201
-
+    if conversation is None:
+        # conversation not in database
+        return "",400
+        
+    # Redirect to flag first post in conversation
+    return flagPost(post_id = conversation.posts[0].id)
+        
 @app.route("/images/<path:filename>", methods = ["GET"])
 def getImage(filename):
-    # TODO: ensure the client gets a 404 if they pass something nasty like ../../../../etc/passwd.
     return send_from_directory("images", filename)
 
 if __name__ == "__main__":
