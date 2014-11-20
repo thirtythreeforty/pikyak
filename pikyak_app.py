@@ -231,7 +231,7 @@ def removeVote(post_id):
     vote = Vote.query.filter_by(post_id = post_id, user = g.user).scalar()
     if vote is None:
         # Bad request: Post does not exist
-        return "", 400
+        return "", 404
 
     post = Post.query.get(post_id)
         
