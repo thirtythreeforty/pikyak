@@ -228,7 +228,7 @@ def createVote(post_id):
 @app.route("/posts/<int:post_id>/user_score", methods=["DELETE"])
 @auth.login_required
 def removeVote(post_id):
-    vote = Vote.query.filter_by(post_id = post_id, user_id = g.user.username).scalar()
+    vote = Vote.query.filter_by(post_id = post_id, user = g.user).scalar()
     if vote is None:
         # Bad request: Post does not exist
         return "", 400
@@ -245,13 +245,10 @@ def removeVote(post_id):
 @app.route("/conversations/<int:conversation_id>/user_score", methods=["PUT","DELETE"])
 @auth.login_required
 def voteConversation(conversation_id):
-    j = request.get_json()
-    if j is None:
-        # Bad request
-        return "", 400
-        
     conversation = Conversation.query.get(conversation_id)
-    
+    if conversation is None:
+        return "", 404
+
     if request.method == "PUT":
         return createVote(post_id = conversation.posts[0].id)
     else:
@@ -268,7 +265,7 @@ def listConversations():
             continue
         user_score = 0
         if request.authorization is not None:
-            vote = Vote.query(user_id  = request.authorization["username"]).scalar()
+            vote = Vote.query.filter_by(user_id = request.authorization["username"], post = c.posts[0]).scalar()
             if vote is not None:
                 user_score = vote.value
         response["conversations"].append(
@@ -293,7 +290,7 @@ def listPosts(conversation_id):
             continue
         user_score = 0
         if request.authorization is not None:
-            vote = Vote.query(user_id  = request.authorization["username"]).scalar()
+            vote = Vote.query.filter_by(user_id = request.authorization["username"], post = p).scalar()
             if vote is not None:
                 user_score = vote.value
         response["posts"].append(
