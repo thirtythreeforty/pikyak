@@ -386,7 +386,29 @@ def deleteConversation(conversation_id):
         db.session.commit()
         # Conversation undeleted
         return "",201
-
+        
+@app.route("/posts/<int:post_id>/flag", methods = ["PUT"])
+@auth.login_required
+def clearPostFlags(post_id):
+    post = Post.query.get(post_id)
+    if post is None:
+        # Post not in database
+        return "", 400
+    
+    post.num_flags = 0
+    # Request successful
+    return "",201
+        
+@app.route("/conversations/<int:conversation_id>/flag", methods = ["PUT"])
+@auth.login_required
+def clearConFlags(conversation_id):
+    conversation = Conversation.query.get(conversation_id)
+    if conversation is None:
+        # Conversation not in database
+        return "", 400
+    # Redirect to handle the post
+    return clearPostFlags(post_id = conversation.posts[0].id)
+    
 @app.route("/posts/{int:post_id}/flag", methods = ["PUT"])
 @auth.login_required
 def flagPost(post_id):
