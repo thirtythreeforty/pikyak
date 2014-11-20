@@ -90,7 +90,8 @@ class Post(db.Model, AsDictMixin):
 
         self.block = False
         self.score = 0
-        
+        self.num_flags = 0
+
 class Conversation(db.Model, AsDictMixin):
     __tablename__ = 'conversations'
     _exportables_ = ['posts']
@@ -279,13 +280,13 @@ def listConversations():
                 "user_score" : user_score
             }
         )
- 
+
     return jsonify(response), 200
 
 @app.route("/conversations/<int:conversation_id>", methods=["GET"])
 def listPosts(conversation_id):
-    posts = Post.query.order_by(Post.id.asc()).paginate(int(request.args.get('first')) + 1, per_page=10).items
-    
+    posts = Post.query.filter_by(conversation_id = conversation_id).order_by(Post.id.asc()).paginate(int(request.args.get('first')) + 1, per_page=10).items
+
     response = {"posts":[]}
     for p in posts:
         if p.score <= -5:
