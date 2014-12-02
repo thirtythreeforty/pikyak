@@ -384,8 +384,8 @@ def deleteConversation(conversation_id):
         db.session.commit()
         # Conversation undeleted
         return "",201
-        
-@app.route("/posts/<int:post_id>/flag", methods = ["PUT"])
+
+@app.route("/posts/<int:post_id>/flag", methods = ["DELETE"])
 @auth.login_required
 def clearPostFlags(post_id):
     post = Post.query.get(post_id)
